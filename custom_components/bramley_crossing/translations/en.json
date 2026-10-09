@@ -1,0 +1,56 @@
+{
+  "title": "Bramley Crossing (signal-inferred advisory)",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect the crossing advisory service",
+        "description": "Crossing state and predictions are inferred from protecting-signal aspects, not physical barrier telemetry. Always obey physical crossing lights and barriers. Advisory only; not for safety-critical control. Enter the service base URL, without /api/status.",
+        "data": {
+          "url": "Crossing service base URL",
+          "stale_timeout": "Feed heartbeat stale timeout (seconds)"
+        },
+        "data_description": {
+          "stale_timeout": "Default 90 seconds; polling is every 30 seconds."
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Enter an HTTP(S) base URL without credentials, a query, or a fragment.",
+      "cannot_connect": "Cannot reach the status API. Check the URL, network, and service.",
+      "invalid_status": "The API status is invalid, or its feed is disconnected or stale. Check the service and its clock."
+    },
+    "abort": {
+      "already_configured": "This crossing service is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Crossing feed freshness",
+        "description": "A disconnected or stale protecting-signal feed makes all advisory sensors unavailable. This does not measure physical barriers.",
+        "data": {
+          "stale_timeout": "Feed heartbeat stale timeout (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "inferred_state": {
+        "name": "Inferred crossing state (protecting signals)",
+        "state": {
+          "Unknown": "Unknown",
+          "Open": "Open",
+          "ClosingSoon": "Closing soon",
+          "Closed": "Closed"
+        }
+      },
+      "predicted_close_at": {
+        "name": "Next predicted closure (protecting signals)"
+      },
+      "typical_closure_seconds": {
+        "name": "Typical predicted closure duration (protecting signals)"
+      }
+    }
+  }
+}

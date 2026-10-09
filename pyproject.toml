@@ -1,0 +1,23 @@
+[project]
+name = "home-assistant-bramley-crossing"
+version = "0.1.0"
+description = "Advisory, signal-inferred Bramley crossing sensors for Home Assistant"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "pytest-homeassistant-custom-component>=0.13.200",
+  "pytest-aiohttp>=1.0.5",
+  "ruff>=0.9.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]

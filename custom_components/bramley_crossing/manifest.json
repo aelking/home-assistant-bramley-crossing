@@ -1,0 +1,12 @@
+{
+  "domain": "bramley_crossing",
+  "name": "Bramley Crossing (signal-inferred advisory)",
+  "version": "0.1.0",
+  "codeowners": ["@aelking"],
+  "config_flow": true,
+  "documentation": "https://github.com/aelking/home-assistant-bramley-crossing",
+  "issue_tracker": "https://github.com/aelking/home-assistant-bramley-crossing/issues",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": []
+}
