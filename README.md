@@ -21,6 +21,9 @@ Requires Home Assistant 2025.2 or newer and HACS.
 4. Open **Settings > Devices & services > Add integration**, search for
    **Bramley Crossing**, and enter your crossing service's base URL.
 
+The integration includes the Bramley Crossing dashboard icon for Home
+Assistant's integration branding.
+
 This repository has the HACS integration layout and metadata. It is installed
 as a custom repository; inclusion in HACS's default catalog is a separate process.
 For manual installation, copy `custom_components/bramley_crossing` into
@@ -52,12 +55,19 @@ Entity IDs are assigned by Home Assistant; use the entity registry to find them.
 | --- | --- | --- |
 | Inferred crossing state (protecting signals) | `state` | Enum: `Unknown`, `Open`, `ClosingSoon`, `Closed` |
 | Next predicted closure (protecting signals) | `predictedCloseAt` | Timestamp, converted to UTC |
-| Typical predicted closure duration (protecting signals) | `typicalClosureSeconds` | Duration in seconds |
+| Predicted opening time (protecting signals) | `durationPrediction.expectedOpenAt` | Timestamp, converted to UTC |
 
 `Unknown` is an explicit enum value for absent/unrecognized crossing state.
-Absent/null predictions and durations remain Home Assistant `unknown` values,
-not zero, the current time, or a fabricated prediction. A valid duration of zero
-is retained. There are no daily closure statistics or control services.
+Absent or null prediction timestamps remain Home Assistant `unknown` values,
+not the current time or a fabricated prediction. The typical predicted closure
+duration is no longer exposed.
+
+**Upgrade note:** The previous typical-closure-duration sensor is removed and
+replaced with a predicted-opening-time sensor. Update dashboard cards and
+automations that reference the old duration entity; if Home Assistant retains
+the removed entity in its entity registry, remove it there after migrating those
+references. The new timestamp is a different value and cannot substitute for a
+duration in existing duration-based calculations.
 
 Each sensor carries `inference_basis`, `advisory`, `observed_at`,
 `feed_updated_at`, and `last_message_at` attributes. `observed_at` comes only
@@ -81,6 +91,9 @@ plus request latency). Keep the service and Home Assistant clocks synchronized.
 
 The integration consumes the existing status contract only; it does not change
 the service, infer extra predictions, or use physical barrier telemetry.
+On Home Assistant 2026.3 and newer, its crossing icon is loaded from the
+integration's local brand assets. Earlier Home Assistant versions ignore
+integration-local branding.
 
 ## Development
 

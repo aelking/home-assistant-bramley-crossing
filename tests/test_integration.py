@@ -40,9 +40,15 @@ async def setup(hass, payload):
     registry = er.async_get(hass)
     entities = {
         key: registry.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_{key}")
-        for key in ("state", "predicted_close_at", "typical_closure_seconds")
+        for key in ("state", "predicted_close_at", "predicted_open_at")
     }
     assert all(entities.values())
+    assert (
+        registry.async_get_entity_id(
+            "sensor", DOMAIN, f"{entry.entry_id}_typical_closure_seconds"
+        )
+        is None
+    )
     return entry, entities, data
 
 
@@ -50,7 +56,7 @@ async def test_sensor_mapping_and_device(hass, status_payload):
     entry, entities, _ = await setup(hass, status_payload)
     state = hass.states.get(entities["state"])
     prediction = hass.states.get(entities["predicted_close_at"])
-    duration = hass.states.get(entities["typical_closure_seconds"])
+    opening = hass.states.get(entities["predicted_open_at"])
     assert state.state == "ClosingSoon"
     assert state.attributes["device_class"] == "enum"
     assert state.attributes["options"] == ["Unknown", "Open", "ClosingSoon", "Closed"]
@@ -60,9 +66,8 @@ async def test_sensor_mapping_and_device(hass, status_payload):
     assert "protecting signals" in state.attributes["friendly_name"]
     assert prediction.state == "2026-10-09T09:05:00+00:00"
     assert prediction.attributes["device_class"] == "timestamp"
-    assert float(duration.state) == 125.5
-    assert duration.attributes["unit_of_measurement"] == "s"
-    assert duration.attributes["device_class"] == "duration"
+    assert opening.state == "2026-10-09T09:09:00+00:00"
+    assert opening.attributes["device_class"] == "timestamp"
     entity = er.async_get(hass).async_get(entities["state"])
     device = dr.async_get(hass).async_get(entity.device_id)
     assert device.model == INFERENCE_BASIS
@@ -72,11 +77,11 @@ async def test_sensor_mapping_and_device(hass, status_payload):
 async def test_unknown_values(hass, status_payload):
     status_payload["state"] = "Unknown"
     status_payload["predictedCloseAt"] = None
-    status_payload["typicalClosureSeconds"] = None
+    status_payload["durationPrediction"] = None
     _, entities, _ = await setup(hass, status_payload)
     assert hass.states.get(entities["state"]).state == "Unknown"
     assert hass.states.get(entities["predicted_close_at"]).state == STATE_UNKNOWN
-    assert hass.states.get(entities["typical_closure_seconds"]).state == STATE_UNKNOWN
+    assert hass.states.get(entities["predicted_open_at"]).state == STATE_UNKNOWN
 
 
 @pytest.mark.parametrize(
@@ -184,7 +189,7 @@ async def test_live_status_endpoint(
     registry = er.async_get(hass)
     entities = {
         key: registry.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_{key}")
-        for key in ("state", "predicted_close_at", "typical_closure_seconds")
+        for key in ("state", "predicted_close_at", "predicted_open_at")
     }
     original_observation = hass.states.get(entities["state"]).attributes["observed_at"]
     assert hass.states.get(entities["state"]).state == "ClosingSoon"
@@ -202,12 +207,12 @@ async def test_live_status_endpoint(
     status_payload["feedStatus"]["updatedAt"] = datetime.now(UTC).isoformat()
     status_payload["state"] = "Unknown"
     status_payload["predictedCloseAt"] = None
-    status_payload["typicalClosureSeconds"] = None
+    status_payload["durationPrediction"]["expectedOpenAt"] = None
     await entry.runtime_data.async_refresh()
     await hass.async_block_till_done()
     assert hass.states.get(entities["state"]).state == "Unknown"
     assert hass.states.get(entities["predicted_close_at"]).state == STATE_UNKNOWN
-    assert hass.states.get(entities["typical_closure_seconds"]).state == STATE_UNKNOWN
+    assert hass.states.get(entities["predicted_open_at"]).state == STATE_UNKNOWN
     assert hass.states.get(entities["state"]).attributes["observed_at"] == (
         original_observation
     )
