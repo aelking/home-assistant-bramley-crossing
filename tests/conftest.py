@@ -20,7 +20,10 @@ def status_payload():
         "state": "ClosingSoon",
         "observedAt": "2026-01-01T10:00:00Z",
         "predictedCloseAt": "2026-10-09T10:05:00+01:00",
-        "typicalClosureSeconds": 125.5,
+        "durationPrediction": {
+            "availability": "Estimated",
+            "expectedOpenAt": "2026-10-09T10:09:00+01:00",
+        },
         "feedStatus": {
             "connected": True,
             "updatedAt": now,

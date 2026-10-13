@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from math import isfinite
 
 from aiohttp import ClientSession, ClientTimeout
 from yarl import URL
@@ -55,7 +54,7 @@ class CrossingStatus:
     state: str
     observed_at: datetime | None
     predicted_close_at: datetime | None
-    typical_closure_seconds: float | None
+    predicted_open_at: datetime | None
     feed_updated_at: datetime
     last_message_at: datetime | None
 
@@ -83,14 +82,9 @@ def parse_status(
         raise InvalidStatus("The protecting-signal feed heartbeat is stale")
     if age < -UPDATE_INTERVAL.total_seconds():
         raise InvalidStatus("The feed heartbeat is in the future; check service clocks")
-    duration = payload.get("typicalClosureSeconds")
-    if duration is not None and (
-        isinstance(duration, bool)
-        or not isinstance(duration, (int, float))
-        or not isfinite(duration)
-        or duration < 0
-    ):
-        raise InvalidStatus("typicalClosureSeconds must be finite and non-negative")
+    duration_prediction = payload.get("durationPrediction")
+    if duration_prediction is not None and not isinstance(duration_prediction, dict):
+        raise InvalidStatus("durationPrediction must be an object or null")
     state = payload.get("state")
     return CrossingStatus(
         state=state if isinstance(state, str) and state in STATES else "Unknown",
@@ -98,7 +92,12 @@ def parse_status(
         predicted_close_at=_timestamp(
             payload.get("predictedCloseAt"), "predictedCloseAt"
         ),
-        typical_closure_seconds=float(duration) if duration is not None else None,
+        predicted_open_at=_timestamp(
+            duration_prediction.get("expectedOpenAt")
+            if duration_prediction is not None
+            else None,
+            "durationPrediction.expectedOpenAt",
+        ),
         feed_updated_at=updated_at,
         last_message_at=_timestamp(feed["lastMessageAt"], "feedStatus.lastMessageAt"),
     )

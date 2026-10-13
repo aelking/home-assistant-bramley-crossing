@@ -10,7 +10,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
 )
-from homeassistant.const import CONF_URL, UnitOfTime
+from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -25,7 +25,7 @@ from .coordinator import CrossingConfigEntry, CrossingCoordinator
 class CrossingSensorDescription(SensorEntityDescription):
     """Describe how a sensor maps the validated status."""
 
-    value_fn: Callable[[CrossingStatus], str | datetime | float | None]
+    value_fn: Callable[[CrossingStatus], str | datetime | None]
 
 
 SENSORS = (
@@ -43,11 +43,10 @@ SENSORS = (
         value_fn=lambda data: data.predicted_close_at,
     ),
     CrossingSensorDescription(
-        key="typical_closure_seconds",
-        translation_key="typical_closure_seconds",
-        device_class=SensorDeviceClass.DURATION,
-        native_unit_of_measurement=UnitOfTime.SECONDS,
-        value_fn=lambda data: data.typical_closure_seconds,
+        key="predicted_open_at",
+        translation_key="predicted_open_at",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda data: data.predicted_open_at,
     ),
 )
 
@@ -57,7 +56,7 @@ async def async_setup_entry(
     entry: CrossingConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Add the three advisory sensors."""
+    """Add the advisory sensors."""
     async_add_entities(
         CrossingSensor(entry.runtime_data, entry, description)
         for description in SENSORS
@@ -65,7 +64,7 @@ async def async_setup_entry(
 
 
 class CrossingSensor(CoordinatorEntity[CrossingCoordinator], SensorEntity):
-    """Share availability across all three signal-inferred sensors."""
+    """Share availability across all signal-inferred sensors."""
 
     _attr_has_entity_name = True
     entity_description: CrossingSensorDescription
@@ -90,7 +89,7 @@ class CrossingSensor(CoordinatorEntity[CrossingCoordinator], SensorEntity):
         )
 
     @property
-    def native_value(self) -> str | datetime | float | None:
+    def native_value(self) -> str | datetime | None:
         """Return Unknown for unknown inference, or None for absent predictions."""
         return self.entity_description.value_fn(self.coordinator.data)
 

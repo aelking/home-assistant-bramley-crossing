@@ -48,8 +48,8 @@
       "predicted_close_at": {
         "name": "Next predicted closure (protecting signals)"
       },
-      "typical_closure_seconds": {
-        "name": "Typical predicted closure duration (protecting signals)"
+      "predicted_open_at": {
+        "name": "Predicted opening time (protecting signals)"
       }
     }
   }

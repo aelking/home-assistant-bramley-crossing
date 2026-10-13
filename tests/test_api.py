@@ -30,7 +30,7 @@ def test_mapping(status_payload, state):
     assert status.state == state
     assert status.observed_at == datetime(2026, 1, 1, 10, tzinfo=UTC)
     assert status.predicted_close_at == datetime(2026, 10, 9, 9, 5, tzinfo=UTC)
-    assert status.typical_closure_seconds == 125.5
+    assert status.predicted_open_at == datetime(2026, 10, 9, 9, 9, tzinfo=UTC)
     assert status.last_message_at is None
 
 
@@ -41,30 +41,36 @@ def test_unknown_state(status_payload, state):
 
 
 def test_missing_optional_values(status_payload):
-    for key in ("state", "observedAt", "predictedCloseAt", "typicalClosureSeconds"):
+    for key in ("state", "observedAt", "predictedCloseAt", "durationPrediction"):
         del status_payload[key]
     status = parse(status_payload)
     assert status.state == "Unknown"
     assert status.observed_at is None
     assert status.predicted_close_at is None
-    assert status.typical_closure_seconds is None
+    assert status.predicted_open_at is None
 
 
-@pytest.mark.parametrize("duration", [None, 0, 90, 90.5])
-def test_nullable_predictions_and_duration(status_payload, duration):
-    status_payload["predictedCloseAt"] = None
-    status_payload["typicalClosureSeconds"] = duration
+@pytest.mark.parametrize("expected_open_at", [None, "2026-10-09T10:09:00+01:00"])
+def test_nullable_predicted_open_time(status_payload, expected_open_at):
+    status_payload["durationPrediction"]["expectedOpenAt"] = expected_open_at
     status = parse(status_payload)
-    assert status.predicted_close_at is None
-    assert status.typical_closure_seconds == duration
+    assert status.predicted_open_at == (
+        datetime.fromisoformat(expected_open_at).astimezone(UTC)
+        if expected_open_at is not None
+        else None
+    )
 
 
-@pytest.mark.parametrize(
-    "duration", [True, False, -1, "90", [], float("nan"), float("inf")]
-)
-def test_invalid_duration(status_payload, duration):
-    status_payload["typicalClosureSeconds"] = duration
-    with pytest.raises(InvalidStatus, match="typicalClosureSeconds"):
+@pytest.mark.parametrize("duration_prediction", [None, {}])
+def test_missing_predicted_open_time(status_payload, duration_prediction):
+    status_payload["durationPrediction"] = duration_prediction
+    assert parse(status_payload).predicted_open_at is None
+
+
+@pytest.mark.parametrize("duration_prediction", [[], "estimated", 123])
+def test_invalid_duration_prediction(status_payload, duration_prediction):
+    status_payload["durationPrediction"] = duration_prediction
+    with pytest.raises(InvalidStatus, match="durationPrediction"):
         parse(status_payload)
 
 
@@ -86,10 +92,16 @@ def test_missing_malformed_disconnected_feed(status_payload, feed):
         parse_status(status_payload, stale_timeout=90, now=datetime.now(UTC))
 
 
-@pytest.mark.parametrize("field", ["observedAt", "predictedCloseAt"])
+@pytest.mark.parametrize(
+    "field",
+    ["observedAt", "predictedCloseAt", "durationPrediction.expectedOpenAt"],
+)
 @pytest.mark.parametrize("value", ["not-a-time", "2026-10-09T10:00:00", 123])
 def test_invalid_timestamp(status_payload, field, value):
-    status_payload[field] = value
+    if field == "durationPrediction.expectedOpenAt":
+        status_payload["durationPrediction"]["expectedOpenAt"] = value
+    else:
+        status_payload[field] = value
     with pytest.raises(InvalidStatus, match=field):
         parse(status_payload)
 

@@ -1,7 +1,7 @@
 {
   "domain": "bramley_crossing",
   "name": "Bramley Crossing (signal-inferred advisory)",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "codeowners": ["@aelking"],
   "config_flow": true,
   "documentation": "https://github.com/aelking/home-assistant-bramley-crossing",
